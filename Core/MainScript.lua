@@ -60,6 +60,7 @@ getgenv().StratXLibrary = {
 local ConvertFunc = loadModule("ConvertFunc.lua")
 local CustomUI = loadModule("CustomUI.lua")
 local CustomConsole = loadModule("CustomConsole.lua")
+local Logger = loadModule("Logger.lua")
 
 -- Load function modules
 getgenv().Functions = {}
@@ -83,40 +84,76 @@ local LowGraphics = loadModule("Features/LowGraphics.lua")
 local Webhook = loadModule("Features/Webhook.lua")
 local Tutorial = loadModule("Features/Tutorial.lua")
 
--- Initialize custom console
-_G.CustomConsole = CustomConsole:Create()
-ConsoleInfo("TDS Script loaded successfully!")
+-- Initialize logging system
+_G.TDSLogger = Logger:Create()
+LogInfo("TDS Script loaded successfully!", "System")
 
 -- Create main UI
 local mainWindow = CustomUI:CreateWindow("TDS Script")
 mainWindow:Section("Main Features")
 mainWindow:Button("Start Script", function()
-    ConsoleInfo("Script started!")
+    LogInfo("Script started!", "System")
 end)
 
 mainWindow:Button("Load Strat", function()
-    ConsoleInfo("Strat loaded!")
+    LogInfo("Strat loaded!", "System")
 end)
 
 mainWindow:Toggle("Auto Farm", false, function(state)
-    ConsoleInfo("Auto Farm: " .. tostring(state))
+    LogInfo("Auto Farm: " .. tostring(state), "Settings")
 end)
 
 mainWindow:Section("Utilities")
 mainWindow:Toggle("Auto Skip", true, function(state)
-    ConsoleInfo("Auto Skip: " .. tostring(state))
+    LogInfo("Auto Skip: " .. tostring(state), "Settings")
 end)
 
 mainWindow:Toggle("Low Graphics", false, function(state)
-    ConsoleInfo("Low Graphics: " .. tostring(state))
+    LogInfo("Low Graphics: " .. tostring(state), "Settings")
     if LowGraphics then
         LowGraphics(state)
     end
 end)
 
 mainWindow:Dropdown("Camera Mode", {"Normal", "Follow", "Free"}, function(option)
-    ConsoleInfo("Camera mode: " .. option)
+    LogInfo("Camera mode: " .. option, "Settings")
+end)
+
+-- Add logger controls to UI
+mainWindow:Section("Logging")
+mainWindow:Button("Show Logs", function()
+    if _G.TDSLogger and _G.TDSLogger.GUI then
+        _G.TDSLogger.GUI.Enabled = true
+        LogInfo("Logger window shown", "System")
+    else
+        _G.TDSLogger = Logger:Create()
+        LogInfo("Logger initialized and shown", "System")
+    end
+end)
+
+mainWindow:Button("Hide Logs", function()
+    if _G.TDSLogger and _G.TDSLogger.GUI then
+        _G.TDSLogger.GUI.Enabled = false
+        LogInfo("Logger window hidden", "System")
+    end
+end)
+
+mainWindow:Button("Clear Logs", function()
+    if _G.TDSLogger then
+        for _, child in ipairs(_G.TDSLogger.LogContent:GetChildren()) do
+            if child:IsA("TextLabel") then
+                child:Destroy()
+            end
+        end
+        _G.TDSLogger.LogCount = 0
+        _G.TDSLogger.StatsText.Text = "Total Logs: 0 | Last Action: Cleared"
+        LogInfo("Logs cleared", "System")
+    end
 end)
 
 -- Initialize the script
-ConsoleInfo("TDS Script initialization complete!")
+LogInfo("TDS Script initialization complete!", "System")
+
+-- Example of how to use the logger in functions
+LogInfo("All modules loaded successfully", "System")
+LogSuccess("Ready to start Tower Defense Simulator", "System")
