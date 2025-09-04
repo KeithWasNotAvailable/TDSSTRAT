@@ -62,4 +62,7 @@ function TeleportHandler(Id,MinPlayers,MaxPlayers)
         until GetServerId
     end
     print("Teleport:",GetServerId.id,GetServerId.playing)
-    game:GetService("TeleportService"):
+    game:GetService("TeleportService"):TeleportToPlaceInstance(Id, GetServerId.id, game:GetService("Players").LocalPlayer)
+end
+
+return TeleportHandler
