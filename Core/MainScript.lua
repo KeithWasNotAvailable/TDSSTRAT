@@ -26,8 +26,8 @@ getgenv().StratXLibrary = {
         UseTimeScale = false,
         PreferMatchmaking = false,
         Webhook = {
-            Enabled = false,
-            Link = "",
+            Enabled = getgenv().Webhook and getgenv().Webhook ~= "",
+            Link = getgenv().Webhook or "",
             HideUser = false,
             UseNewFormat = false,
             PlayerInfo = true,
@@ -83,12 +83,17 @@ local JoinLessServer = loadModule("Features/JoinLessServer.lua")
 local LowGraphics = loadModule("Features/LowGraphics.lua")
 local Webhook = loadModule("Features/Webhook.lua")
 local Tutorial = loadModule("Features/Tutorial.lua")
+local Recorder = loadModule("Features/Recorder.lua")
 
 -- Initialize logging system
 _G.TDSLogger = Logger:Create()
 LogInfo("TDS Script loaded successfully!", "System")
 
--- Create main UI
+-- Initialize Recorder
+_G.Recorder = Recorder:Create()
+LogInfo("Recorder system initialized", "System")
+
+-- Create main UI (simplified - no recorder controls in UI)
 local mainWindow = CustomUI:CreateWindow("TDS Script")
 mainWindow:Section("Main Features")
 mainWindow:Button("Start Script", function()
@@ -97,10 +102,6 @@ end)
 
 mainWindow:Button("Load Strat", function()
     LogInfo("Strat loaded!", "System")
-end)
-
-mainWindow:Toggle("Auto Farm", false, function(state)
-    LogInfo("Auto Farm: " .. tostring(state), "Settings")
 end)
 
 mainWindow:Section("Utilities")
@@ -115,11 +116,7 @@ mainWindow:Toggle("Low Graphics", false, function(state)
     end
 end)
 
-mainWindow:Dropdown("Camera Mode", {"Normal", "Follow", "Free"}, function(option)
-    LogInfo("Camera mode: " .. option, "Settings")
-end)
-
--- Add logger controls to UI
+-- Logging Controls Only
 mainWindow:Section("Logging")
 mainWindow:Button("Show Logs", function()
     if _G.TDSLogger and _G.TDSLogger.GUI then
@@ -138,22 +135,11 @@ mainWindow:Button("Hide Logs", function()
     end
 end)
 
-mainWindow:Button("Clear Logs", function()
-    if _G.TDSLogger then
-        for _, child in ipairs(_G.TDSLogger.LogContent:GetChildren()) do
-            if child:IsA("TextLabel") then
-                child:Destroy()
-            end
-        end
-        _G.TDSLogger.LogCount = 0
-        _G.TDSLogger.StatsText.Text = "Total Logs: 0 | Last Action: Cleared"
-        LogInfo("Logs cleared", "System")
-    end
-end)
-
 -- Initialize the script
 LogInfo("TDS Script initialization complete!", "System")
+LogSuccess("All modules loaded successfully - Ready to play!", "System")
 
--- Example of how to use the logger in functions
-LogInfo("All modules loaded successfully", "System")
-LogSuccess("Ready to start Tower Defense Simulator", "System")
+-- Settings loaded from Loader
+LogInfo("Settings - Record: " .. tostring(getgenv().Record or false) .. 
+       ", Replay: " .. tostring(getgenv().Replay or false) .. 
+       ", Webhook: " .. tostring(getgenv().Webhook and getgenv().Webhook ~= ""), "System")
