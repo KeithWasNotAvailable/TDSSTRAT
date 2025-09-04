@@ -93,370 +93,113 @@ local appendlog = function(...)
     end)
 end
 
--- Custom UI Library (replacement for Sigmanic's UI)
-local function createCustomUI()
+-- Load your existing CustomUI and Logger
+local function loadCustomUI()
+    local success, err = pcall(function()
+        if isfile("CustomUI.lua") then
+            return loadfile("CustomUI.lua")()
+        else
+            error("CustomUI.lua not found")
+        end
+    end)
+    
+    if not success then
+        warn("Failed to load CustomUI: " .. tostring(err))
+        return nil
+    end
+    return success
+end
+
+local function loadLogger()
+    local success, err = pcall(function()
+        if isfile("Logger.lua") then
+            return loadfile("Logger.lua")()
+        else
+            error("Logger.lua not found")
+        end
+    end)
+    
+    if not success then
+        warn("Failed to load Logger: " .. tostring(err))
+        return nil
+    end
+    return success
+end
+
+-- Initialize your existing systems
+getgenv().CustomUI = loadCustomUI()
+getgenv().Logger = loadLogger()
+
+if not CustomUI then
+    -- Fallback basic UI if CustomUI fails to load
     local screenGui = Instance.new("ScreenGui")
-    screenGui.Name = "StrategiesXUI"
+    screenGui.Name = "StrategiesXUIFallback"
     screenGui.Parent = game:GetService("CoreGui")
-    screenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     
-    local mainFrame = Instance.new("Frame")
-    mainFrame.Name = "MainFrame"
-    mainFrame.Size = UDim2.new(0, 400, 0, 500)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -250)
-    mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
-    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
-    mainFrame.BorderSizePixel = 0
-    mainFrame.Parent = screenGui
-    
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, 8)
-    corner.Parent = mainFrame
-    
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = Color3.fromRGB(80, 80, 100)
-    stroke.Thickness = 2
-    stroke.Parent = mainFrame
-    
-    local title = Instance.new("TextLabel")
-    title.Name = "Title"
-    title.Size = UDim2.new(1, 0, 0, 40)
-    title.Position = UDim2.new(0, 0, 0, 0)
-    title.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-    title.BorderSizePixel = 0
-    title.Text = "Strategies X"
-    title.TextColor3 = Color3.fromRGB(255, 255, 255)
-    title.TextSize = 20
-    title.Font = Enum.Font.GothamBold
-    title.Parent = mainFrame
-    
-    local titleCorner = Instance.new("UICorner")
-    titleCorner.CornerRadius = UDim.new(0, 8)
-    titleCorner.Parent = title
-    
-    local closeButton = Instance.new("TextButton")
-    closeButton.Name = "CloseButton"
-    closeButton.Size = UDim2.new(0, 30, 0, 30)
-    closeButton.Position = UDim2.new(1, -35, 0, 5)
-    closeButton.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
-    closeButton.BorderSizePixel = 0
-    closeButton.Text = "X"
-    closeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-    closeButton.TextSize = 16
-    closeButton.Font = Enum.Font.GothamBold
-    closeButton.Parent = title
-    
-    local closeCorner = Instance.new("UICorner")
-    closeCorner.CornerRadius = UDim.new(0, 15)
-    closeCorner.Parent = closeButton
-    
-    closeButton.MouseButton1Click:Connect(function()
-        screenGui:Destroy()
-    end)
-    
-    local tabButtons = Instance.new("Frame")
-    tabButtons.Name = "TabButtons"
-    tabButtons.Size = UDim2.new(1, 0, 0, 40)
-    tabButtons.Position = UDim2.new(0, 0, 0, 40)
-    tabButtons.BackgroundTransparency = 1
-    tabButtons.Parent = mainFrame
-    
-    local contentFrame = Instance.new("ScrollingFrame")
-    contentFrame.Name = "ContentFrame"
-    contentFrame.Size = UDim2.new(1, -20, 1, -100)
-    contentFrame.Position = UDim2.new(0, 10, 0, 90)
-    contentFrame.BackgroundTransparency = 1
-    contentFrame.BorderSizePixel = 0
-    contentFrame.ScrollBarThickness = 5
-    contentFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-    contentFrame.Parent = mainFrame
-    
-    local uiListLayout = Instance.new("UIListLayout")
-    uiListLayout.Padding = UDim.new(0, 10)
-    uiListLayout.Parent = contentFrame
-    
-    local tabs = {}
-    local currentTab = nil
-    
-    local function createTab(name)
-        local tabButton = Instance.new("TextButton")
-        tabButton.Name = name .. "TabButton"
-        tabButton.Size = UDim2.new(0, 100, 1, 0)
-        tabButton.Position = UDim2.new(0, (#tabs * 100), 0, 0)
-        tabButton.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-        tabButton.BorderSizePixel = 0
-        tabButton.Text = name
-        tabButton.TextColor3 = Color3.fromRGB(200, 200, 200)
-        tabButton.TextSize = 14
-        tabButton.Font = Enum.Font.Gotham
-        tabButton.Parent = tabButtons
-        
-        local tabCorner = Instance.new("UICorner")
-        tabCorner.CornerRadius = UDim.new(0, 6)
-        tabCorner.Parent = tabButton
-        
-        local tabContent = Instance.new("Frame")
-        tabContent.Name = name .. "TabContent"
-        tabContent.Size = UDim2.new(1, 0, 1, 0)
-        tabContent.Position = UDim2.new(0, 0, 0, 0)
-        tabContent.BackgroundTransparency = 1
-        tabContent.Visible = false
-        tabContent.Parent = contentFrame
-        
-        local tabListLayout = Instance.new("UIListLayout")
-        tabListLayout.Padding = UDim.new(0, 10)
-        tabListLayout.Parent = tabContent
-        
-        tabButton.MouseButton1Click:Connect(function()
-            if currentTab then
-                currentTab.Visible = false
-                for _, btn in pairs(tabButtons:GetChildren()) do
-                    if btn:IsA("TextButton") then
-                        btn.BackgroundColor3 = Color3.fromRGB(50, 50, 60)
-                    end
-                end
-            end
-            tabContent.Visible = true
-            tabButton.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
-            currentTab = tabContent
-        end)
-        
-        tabs[name] = tabContent
-        
-        if #tabs == 1 then
-            tabButton.BackgroundColor3 = Color3.fromRGB(70, 70, 90)
-            tabContent.Visible = true
-            currentTab = tabContent
-        end
-        
-        return tabContent
-    end
-    
-    local function createSection(parent, titleText)
-        local section = Instance.new("Frame")
-        section.Name = "Section"
-        section.Size = UDim2.new(1, 0, 0, 0)
-        section.BackgroundColor3 = Color3.fromRGB(40, 40, 50)
-        section.BorderSizePixel = 0
-        section.AutomaticSize = Enum.AutomaticSize.Y
-        section.Parent = parent
-        
-        local sectionCorner = Instance.new("UICorner")
-        sectionCorner.CornerRadius = UDim.new(0, 6)
-        sectionCorner.Parent = section
-        
-        local sectionTitle = Instance.new("TextLabel")
-        sectionTitle.Name = "SectionTitle"
-        sectionTitle.Size = UDim2.new(1, -20, 0, 30)
-        sectionTitle.Position = UDim2.new(0, 10, 0, 5)
-        sectionTitle.BackgroundTransparency = 1
-        sectionTitle.Text = titleText
-        sectionTitle.TextColor3 = Color3.fromRGB(255, 255, 255)
-        sectionTitle.TextSize = 16
-        sectionTitle.Font = Enum.Font.GothamBold
-        sectionTitle.TextXAlignment = Enum.TextXAlignment.Left
-        sectionTitle.Parent = section
-        
-        local sectionContent = Instance.new("Frame")
-        sectionContent.Name = "SectionContent"
-        sectionContent.Size = UDim2.new(1, -20, 0, 0)
-        sectionContent.Position = UDim2.new(0, 10, 0, 35)
-        sectionContent.BackgroundTransparency = 1
-        sectionContent.AutomaticSize = Enum.AutomaticSize.Y
-        sectionContent.Parent = section
-        
-        local sectionListLayout = Instance.new("UIListLayout")
-        sectionListLayout.Padding = UDim.new(0, 8)
-        sectionListLayout.Parent = sectionContent
-        
-        return sectionContent
-    end
-    
-    local function createButton(parent, text, callback)
-        local button = Instance.new("TextButton")
-        button.Name = text .. "Button"
-        button.Size = UDim2.new(1, 0, 0, 35)
-        button.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
-        button.BorderSizePixel = 0
-        button.Text = text
-        button.TextColor3 = Color3.fromRGB(255, 255, 255)
-        button.TextSize = 14
-        button.Font = Enum.Font.Gotham
-        button.Parent = parent
-        
-        local buttonCorner = Instance.new("UICorner")
-        buttonCorner.CornerRadius = UDim.new(0, 6)
-        buttonCorner.Parent = button
-        
-        button.MouseButton1Click:Connect(callback)
-        
-        return button
-    end
-    
-    local function createToggle(parent, text, default, callback)
-        local toggleFrame = Instance.new("Frame")
-        toggleFrame.Name = text .. "Toggle"
-        toggleFrame.Size = UDim2.new(1, 0, 0, 30)
-        toggleFrame.BackgroundTransparency = 1
-        toggleFrame.Parent = parent
-        
-        local toggleLabel = Instance.new("TextLabel")
-        toggleLabel.Name = "Label"
-        toggleLabel.Size = UDim2.new(0.7, 0, 1, 0)
-        toggleLabel.Position = UDim2.new(0, 0, 0, 0)
-        toggleLabel.BackgroundTransparency = 1
-        toggleLabel.Text = text
-        toggleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-        toggleLabel.TextSize = 14
-        toggleLabel.Font = Enum.Font.Gotham
-        toggleLabel.TextXAlignment = Enum.TextXAlignment.Left
-        toggleLabel.Parent = toggleFrame
-        
-        local toggleButton = Instance.new("TextButton")
-        toggleButton.Name = "ToggleButton"
-        toggleButton.Size = UDim2.new(0, 50, 0, 25)
-        toggleButton.Position = UDim2.new(1, -50, 0.5, -12.5)
-        toggleButton.BackgroundColor3 = default and Color3.fromRGB(60, 180, 80) or Color3.fromRGB(80, 80, 100)
-        toggleButton.BorderSizePixel = 0
-        toggleButton.Text = default and "ON" or "OFF"
-        toggleButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-        toggleButton.TextSize = 12
-        toggleButton.Font = Enum.Font.GothamBold
-        toggleButton.Parent = toggleFrame
-        
-        local toggleCorner = Instance.new("UICorner")
-        toggleCorner.CornerRadius = UDim.new(0, 12)
-        toggleCorner.Parent = toggleButton
-        
-        toggleButton.MouseButton1Click:Connect(function()
-            local newState = not (toggleButton.Text == "ON")
-            toggleButton.BackgroundColor3 = newState and Color3.fromRGB(60, 180, 80) or Color3.fromRGB(80, 80, 100)
-            toggleButton.Text = newState and "ON" or "OFF"
-            if callback then callback(newState) end
-        end)
-        
-        return toggleFrame
-    end
-    
-    local function createLabel(parent, text)
-        local label = Instance.new("TextLabel")
-        label.Name = "Label"
-        label.Size = UDim2.new(1, 0, 0, 20)
-        label.BackgroundTransparency = 1
-        label.Text = text
-        label.TextColor3 = Color3.fromRGB(200, 200, 200)
-        label.TextSize = 14
-        label.Font = Enum.Font.Gotham
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.Parent = parent
-        
-        return label
-    end
-    
-    -- Create tabs
-    local mainTab = createTab("Main")
-    local utilitiesTab = createTab("Utilities")
-    local settingsTab = createTab("Settings")
-    
-    -- Main tab content
-    local mainSection = createSection(mainTab, "Strategies X")
-    createLabel(mainSection, "Version: 1.0.0")
-    createLabel(mainSection, "Place: " .. (game.PlaceId == 5591597781 and "Ingame" or "Lobby"))
-    
-    local loadoutSection = createSection(mainTab, "Loadout Status")
-    createLabel(loadoutSection, "Troop 1: Empty")
-    createLabel(loadoutSection, "Troop 2: Empty")
-    createLabel(loadoutSection, "Troop 3: Empty")
-    createLabel(loadoutSection, "Troop 4: Empty")
-    createLabel(loadoutSection, "Troop 5: Empty")
-    
-    -- Utilities tab content
-    local gameSection = createSection(utilitiesTab, "Game Settings")
-    createToggle(gameSection, "Rejoin Lobby After Match", true, function(state) end)
-    createToggle(gameSection, "Show Towers Preview", false, function(state) end)
-    createButton(gameSection, "Teleport Back To Platform", function() end)
-    createToggle(gameSection, "Use Timescale", false, function(state) end)
-    
-    local cameraSection = createSection(utilitiesTab, "Camera Settings")
-    createButton(cameraSection, "Normal Camera", function() end)
-    createButton(cameraSection, "Follow Enemies", function() end)
-    createButton(cameraSection, "Free Camera", function() end)
-    
-    -- Settings tab content
-    local webhookSection = createSection(settingsTab, "Webhook Settings")
-    createToggle(webhookSection, "Enabled", false, function(state) end)
-    createToggle(webhookSection, "Apply New Format", false, function(state) end)
-    createLabel(webhookSection, "Webhook Link:")
-    createToggle(webhookSection, "Hide Username", false, function(state) end)
-    
-    local universalSection = createSection(settingsTab, "Universal Settings")
-    createToggle(universalSection, "Prefer Matchmaking", false, function(state) end)
-    createToggle(universalSection, "Auto Skip Wave", false, function(state) end)
-    createToggle(universalSection, "Low Graphics Mode", false, function(state) end)
-    createToggle(universalSection, "Bypass Group Checking", false, function(state) end)
-    createToggle(universalSection, "Auto Buy Missing Tower", false, function(state) end)
-    createToggle(universalSection, "Auto Restart When Lose", false, function(state) end)
-    createButton(universalSection, "Rejoin To Lobby", function() end)
-    
-    -- Make the UI draggable
-    local dragging = false
-    local dragInput, dragStart, startPos
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(0, 200, 0, 50)
+    textLabel.Position = UDim2.new(0, 10, 0, 10)
+    textLabel.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+    textLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    textLabel.Text = "Strategies X Loaded\n(CustomUI failed to load)"
+    textLabel.TextWrapped = true
+    textLabel.Parent = screenGui
+end
 
-    title.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 then
-            dragging = true
-            dragStart = input.Position
-            startPos = mainFrame.Position
-            
-            input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
-            end)
-        end
-    end)
-
-    title.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement then
-            dragInput = input
-        end
-    end)
-
-    game:GetService("UserInputService").InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            local delta = input.Position - dragStart
-            mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-        end
-    end)
-    
-    return {
-        MainTab = mainTab,
-        UtilitiesTab = utilitiesTab,
-        SettingsTab = settingsTab,
-        CreateSection = createSection,
-        CreateButton = createButton,
-        CreateToggle = createToggle,
-        CreateLabel = createLabel
+if not Logger then
+    -- Fallback if Logger fails to load
+    getgenv().Logger = {
+        Info = function(...) print("[INFO]", ...) end,
+        Warn = function(...) warn("[WARN]", ...) end,
+        Error = function(...) warn("[ERROR]", ...) end
     }
 end
 
--- Initialize the UI
-getgenv().CustomUI = createCustomUI()
-
-getgenv().StrategiesXLoader = true
-
--- Load the main script
-local success, err = pcall(function()
-    -- This would load your main script, but since Sigmanic's is gone
-    -- you'll need to replace this with your own implementation
-    appendlog("Loading main script...")
+-- Main initialization
+local function initializeMainSystem()
+    Logger.Info("Initializing Strategies X...")
     
-    -- Placeholder for your main script loading logic
-    -- You'll need to implement this based on your needs
-end)
-
-if not success then
-    warn("Failed to load main script: " .. tostring(err))
+    -- Check if we're in the right game
+    local validPlaceIds = {3260590327, 5591597781} -- TDS place IDs
+    local isValidPlace = false
+    for _, id in ipairs(validPlaceIds) do
+        if game.PlaceId == id then
+            isValidPlace = true
+            break
+        end
+    end
+    
+    if not isValidPlace then
+        Logger.Warn("Not in Tower Defense Simulator. Script may not work properly.")
+        return
+    end
+    
+    -- Load configuration if exists
+    local config = {}
+    if hasFileFunctions and isfile("StrategiesX/UserConfig/config.json") then
+        local success, result = pcall(function()
+            return game:GetService("HttpService"):JSONDecode(readfile("StrategiesX/UserConfig/config.json"))
+        end)
+        if success then
+            config = result
+            Logger.Info("Loaded user configuration")
+        end
+    end
+    
+    -- Set up event handlers and main functionality
+    Logger.Info("Setting up event handlers...")
+    
+    -- Placeholder for your main game logic
+    -- You would implement your TDS automation here
+    
+    Logger.Info("Strategies X initialized successfully!")
 end
 
-appendlog("Strategies X Loader Loaded")
+-- Start the main system
+local success, err = pcall(initializeMainSystem)
+if not success then
+    Logger.Error("Failed to initialize main system: " .. tostring(err))
+end
+
+getgenv().StrategiesXLoader = true
+Logger.Info("Strategies X Loader Loaded")
