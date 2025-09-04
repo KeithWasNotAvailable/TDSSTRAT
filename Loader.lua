@@ -9,10 +9,25 @@ end
 
 getgenv().ExecDis = true
 
--- Configuration Settings (Set these before executing)
-getgenv().Record = false     -- Set to true to auto-start recording
-getgenv().Replay = false     -- Set to true to auto-replay recorded strat
-getgenv().Webhook = ""       -- Set to your webhook URL
+-- Store settings in a persistent global table
+if not getgenv().TDSConfig then
+    getgenv().TDSConfig = {
+        Record = false,
+        Replay = false,
+        Webhook = ""
+    }
+end
+
+-- Apply any pre-set values
+if getgenv().Record ~= nil then
+    getgenv().TDSConfig.Record = getgenv().Record
+end
+if getgenv().Replay ~= nil then
+    getgenv().TDSConfig.Replay = getgenv().Replay
+end
+if getgenv().Webhook ~= nil then
+    getgenv().TDSConfig.Webhook = getgenv().Webhook
+end
 
 if getgenv().Config then
     return
@@ -108,7 +123,7 @@ local appendlog = function(...)
         local Text = table.concat(TableText, " ")
         print(Text)
         return AppendFile(true, game:GetService("Players").LocalPlayer.Name.."'s log", "TDS-Scripts/UserLogs", Text.."\n")
-    end)
+    end
 end
 
 -- List of external URLs to block/redirect
@@ -158,9 +173,9 @@ writelog("--------------------------- TDS Script Loader ------------------------
     "\nPlayer: " .. game:GetService("Players").LocalPlayer.Name,
     "\nPlace: " .. game.PlaceId,
     "\nExecutor: " .. (identifyexecutor and identifyexecutor() or "Unknown"),
-    "\nSettings: Record=" .. tostring(getgenv().Record) .. 
-    ", Replay=" .. tostring(getgenv().Replay) .. 
-    ", Webhook=" .. tostring(getgenv().Webhook ~= ""),
+    "\nSettings: Record=" .. tostring(getgenv().TDSConfig.Record) .. 
+    ", Replay=" .. tostring(getgenv().TDSConfig.Replay) .. 
+    ", Webhook=" .. tostring(getgenv().TDSConfig.Webhook ~= ""),
     "\nBlocked URLs: " .. #BlockedURLs,
     "\n-----------------------------------------------------------------------------"
 )
@@ -171,8 +186,8 @@ appendlog("TDS Script Loader initialized in " .. string.format("%.3f", os.clock(
 appendlog("Loading main script...")
 
 -- Set webhook if provided
-if getgenv().Webhook and getgenv().Webhook ~= "" then
-    appendlog("Webhook URL configured: " .. getgenv().Webhook)
+if getgenv().TDSConfig.Webhook and getgenv().TDSConfig.Webhook ~= "" then
+    appendlog("Webhook URL configured: " .. getgenv().TDSConfig.Webhook)
 end
 
 -- Load the main script
@@ -181,7 +196,7 @@ if mainScript then
     mainScript()
     
     -- Auto-start recording if enabled
-    if getgenv().Record then
+    if getgenv().TDSConfig.Record then
         appendlog("Auto-record enabled - starting recording...")
         task.wait(2) -- Wait for everything to load
         
@@ -194,7 +209,7 @@ if mainScript then
     end
     
     -- Auto-replay if enabled
-    if getgenv().Replay then
+    if getgenv().TDSConfig.Replay then
         appendlog("Auto-replay enabled - checking for recorded strat...")
         task.wait(2)
         
@@ -215,4 +230,5 @@ if mainScript then
     
 else
     appendlog("ERROR: Failed to load MainScript.lua")
+    appendlog("Error: " .. tostring(mainScript))
 end
