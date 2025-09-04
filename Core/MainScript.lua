@@ -12,7 +12,7 @@ local function loadModule(name)
     return result
 end
 
--- Initialize global variables
+-- Initialize global variables with proper config reading
 getgenv().StratXLibrary = {
     UtilitiesConfig = {
         Camera = 2,
@@ -26,8 +26,8 @@ getgenv().StratXLibrary = {
         UseTimeScale = false,
         PreferMatchmaking = false,
         Webhook = {
-            Enabled = getgenv().Webhook and getgenv().Webhook ~= "",
-            Link = getgenv().Webhook or "",
+            Enabled = (getgenv().TDSConfig and getgenv().TDSConfig.Webhook and getgenv().TDSConfig.Webhook ~= "") or false,
+            Link = (getgenv().TDSConfig and getgenv().TDSConfig.Webhook) or "",
             HideUser = false,
             UseNewFormat = false,
             PlayerInfo = true,
@@ -87,59 +87,51 @@ local Recorder = loadModule("Features/Recorder.lua")
 
 -- Initialize logging system
 _G.TDSLogger = Logger:Create()
-LogInfo("TDS Script loaded successfully!", "System")
 
 -- Initialize Recorder
 _G.Recorder = Recorder:Create()
-LogInfo("Recorder system initialized", "System")
 
--- Create main UI (simplified - no recorder controls in UI)
+-- Create main UI (simplified)
 local mainWindow = CustomUI:CreateWindow("TDS Script")
 mainWindow:Section("Main Features")
 mainWindow:Button("Start Script", function()
-    LogInfo("Script started!", "System")
+    if _G.TDSLogger then
+        _G.TDSLogger:AddLog("Script started!", "INFO", "System")
+    end
 end)
 
 mainWindow:Button("Load Strat", function()
-    LogInfo("Strat loaded!", "System")
+    if _G.TDSLogger then
+        _G.TDSLogger:AddLog("Strat loaded!", "INFO", "System")
+    end
 end)
 
 mainWindow:Section("Utilities")
 mainWindow:Toggle("Auto Skip", true, function(state)
-    LogInfo("Auto Skip: " .. tostring(state), "Settings")
-end)
-
-mainWindow:Toggle("Low Graphics", false, function(state)
-    LogInfo("Low Graphics: " .. tostring(state), "Settings")
-    if LowGraphics then
-        LowGraphics(state)
+    if _G.TDSLogger then
+        _G.TDSLogger:AddLog("Auto Skip: " .. tostring(state), "INFO", "Settings")
     end
 end)
 
--- Logging Controls Only
-mainWindow:Section("Logging")
-mainWindow:Button("Show Logs", function()
-    if _G.TDSLogger and _G.TDSLogger.GUI then
-        _G.TDSLogger.GUI.Enabled = true
-        LogInfo("Logger window shown", "System")
-    else
-        _G.TDSLogger = Logger:Create()
-        LogInfo("Logger initialized and shown", "System")
+-- Log settings that were loaded
+if _G.TDSLogger then
+    _G.TDSLogger:AddLog("TDS Script loaded successfully!", "SUCCESS", "System")
+    _G.TDSLogger:AddLog("Recorder system initialized", "INFO", "System")
+    _G.TDSLogger:AddLog("Settings - Record: " .. tostring(getgenv().TDSConfig and getgenv().TDSConfig.Record or false) .. 
+                       ", Replay: " .. tostring(getgenv().TDSConfig and getgenv().TDSConfig.Replay or false) .. 
+                       ", Webhook: " .. tostring(getgenv().TDSConfig and getgenv().TDSConfig.Webhook and getgenv().TDSConfig.Webhook ~= ""), "INFO", "System")
+    _G.TDSLogger:AddLog("All modules loaded successfully - Ready to play!", "SUCCESS", "System")
+end
+
+-- Auto-start recording if enabled in config
+task.spawn(function()
+    if getgenv().TDSConfig and getgenv().TDSConfig.Record then
+        task.wait(3) -- Wait for game to load
+        if _G.Recorder then
+            _G.Recorder:StartRecording()
+            if _G.TDSLogger then
+                _G.TDSLogger:AddLog("Auto-recording started", "INFO", "Recorder")
+            end
+        end
     end
 end)
-
-mainWindow:Button("Hide Logs", function()
-    if _G.TDSLogger and _G.TDSLogger.GUI then
-        _G.TDSLogger.GUI.Enabled = false
-        LogInfo("Logger window hidden", "System")
-    end
-end)
-
--- Initialize the script
-LogInfo("TDS Script initialization complete!", "System")
-LogSuccess("All modules loaded successfully - Ready to play!", "System")
-
--- Settings loaded from Loader
-LogInfo("Settings - Record: " .. tostring(getgenv().Record or false) .. 
-       ", Replay: " .. tostring(getgenv().Replay or false) .. 
-       ", Webhook: " .. tostring(getgenv().Webhook and getgenv().Webhook ~= ""), "System")
