@@ -9,6 +9,11 @@ end
 
 getgenv().ExecDis = true
 
+-- Configuration Settings (Set these before executing)
+getgenv().Record = false     -- Set to true to auto-start recording
+getgenv().Replay = false     -- Set to true to auto-replay recorded strat
+getgenv().Webhook = ""       -- Set to your webhook URL
+
 if getgenv().Config then
     return
 end
@@ -153,6 +158,9 @@ writelog("--------------------------- TDS Script Loader ------------------------
     "\nPlayer: " .. game:GetService("Players").LocalPlayer.Name,
     "\nPlace: " .. game.PlaceId,
     "\nExecutor: " .. (identifyexecutor and identifyexecutor() or "Unknown"),
+    "\nSettings: Record=" .. tostring(getgenv().Record) .. 
+    ", Replay=" .. tostring(getgenv().Replay) .. 
+    ", Webhook=" .. tostring(getgenv().Webhook ~= ""),
     "\nBlocked URLs: " .. #BlockedURLs,
     "\n-----------------------------------------------------------------------------"
 )
@@ -161,4 +169,50 @@ appendlog("TDS Script Loader initialized in " .. string.format("%.3f", os.clock(
 
 -- Load main script
 appendlog("Loading main script...")
-loadfile("TDS-Scripts/Core/MainScript.lua")()
+
+-- Set webhook if provided
+if getgenv().Webhook and getgenv().Webhook ~= "" then
+    appendlog("Webhook URL configured: " .. getgenv().Webhook)
+end
+
+-- Load the main script
+local mainScript = loadfile("TDS-Scripts/Core/MainScript.lua")
+if mainScript then
+    mainScript()
+    
+    -- Auto-start recording if enabled
+    if getgenv().Record then
+        appendlog("Auto-record enabled - starting recording...")
+        task.wait(2) -- Wait for everything to load
+        
+        if _G.Recorder then
+            _G.Recorder:StartRecording()
+            appendlog("Auto-recording started")
+        else
+            appendlog("ERROR: Recorder not found for auto-record")
+        end
+    end
+    
+    -- Auto-replay if enabled
+    if getgenv().Replay then
+        appendlog("Auto-replay enabled - checking for recorded strat...")
+        task.wait(2)
+        
+        if isfile("TDS-Scripts/RecordedStrat.lua") then
+            appendlog("Found recorded strat - executing...")
+            local success, err = pcall(function()
+                loadfile("TDS-Scripts/RecordedStrat.lua")()
+            end)
+            if success then
+                appendlog("Recorded strat executed successfully")
+            else
+                appendlog("ERROR executing recorded strat: " .. tostring(err))
+            end
+        else
+            appendlog("No recorded strat found for auto-replay")
+        end
+    end
+    
+else
+    appendlog("ERROR: Failed to load MainScript.lua")
+end
