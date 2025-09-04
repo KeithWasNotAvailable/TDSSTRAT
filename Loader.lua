@@ -25,6 +25,12 @@ local function createFolders()
         if not isfolder("StrategiesX/UserConfig") then
             makefolder("StrategiesX/UserConfig")
         end
+        if not isfolder("StrategiesX/Recordings") then
+            makefolder("StrategiesX/Recordings")
+        end
+        if not isfolder("TDS-Scripts") then
+            makefolder("TDS-Scripts")
+        end
     end)
     
     if not success then
@@ -97,7 +103,8 @@ end
 local function loadCustomUI()
     local success, err = pcall(function()
         if isfile("CustomUI.lua") then
-            return loadfile("CustomUI.lua")()
+            local customUIModule = loadfile("CustomUI.lua")()
+            return customUIModule.new() -- Create a new instance
         else
             error("CustomUI.lua not found")
         end
@@ -126,9 +133,28 @@ local function loadLogger()
     return success
 end
 
+-- Load Recorder
+local function loadRecorder()
+    local success, err = pcall(function()
+        if isfile("Recorder.lua") then
+            local recorderModule = loadfile("Recorder.lua")()
+            return recorderModule.new() -- Create a new instance
+        else
+            error("Recorder.lua not found")
+        end
+    end)
+    
+    if not success then
+        warn("Failed to load Recorder: " .. tostring(err))
+        return nil
+    end
+    return success
+end
+
 -- Initialize your existing systems
 getgenv().CustomUI = loadCustomUI()
 getgenv().Logger = loadLogger()
+getgenv().Recorder = loadRecorder()
 
 if not CustomUI then
     -- Fallback basic UI if CustomUI fails to load
@@ -153,6 +179,72 @@ if not Logger then
         Warn = function(...) warn("[WARN]", ...) end,
         Error = function(...) warn("[ERROR]", ...) end
     }
+end
+
+-- Create UI with recorder functionality
+local function createRecorderUI()
+    if not CustomUI then return end
+    
+    local mainWindow = CustomUI:CreateWindow("Strategies X")
+    
+    -- Main tab
+    mainWindow:Section("Strategies X")
+    mainWindow:Label("Version: 1.0.0")
+    
+    local placeId = game.PlaceId
+    local placeName = placeId == 3260590327 and "Lobby" or (placeId == 5591597781 and "Ingame" or "Unknown")
+    mainWindow:Label("Place: " .. placeName)
+    
+    mainWindow:Section("Loadout Status")
+    mainWindow:Label("Troop 1: Empty")
+    mainWindow:Label("Troop 2: Empty")
+    mainWindow:Label("Troop 3: Empty")
+    mainWindow:Label("Troop 4: Empty")
+    mainWindow:Label("Troop 5: Empty")
+    
+    -- Recorder tab
+    mainWindow:Section("Recorder")
+    if Recorder then
+        mainWindow:Button("Start Recording", function()
+            if Recorder.StartRecording then
+                Recorder:StartRecording()
+                mainWindow:Label("Status: Recording...")
+            else
+                warn("Recorder.StartRecording function not found")
+            end
+        end)
+        
+        mainWindow:Button("Stop Recording", function()
+            if Recorder.StopRecording then
+                Recorder:StopRecording()
+                mainWindow:Label("Status: Stopped")
+            else
+                warn("Recorder.StopRecording function not found")
+            end
+        end)
+        
+        mainWindow:Label("Status: Ready")
+    else
+        mainWindow:Label("Recorder not available")
+    end
+    
+    -- Settings tab
+    mainWindow:Section("Settings")
+    mainWindow:Toggle("Auto Farm", false, function(state)
+        Logger.Info("Auto Farm: " .. tostring(state))
+    end)
+    
+    mainWindow:Toggle("Auto Upgrade", true, function(state)
+        Logger.Info("Auto Upgrade: " .. tostring(state))
+    end)
+    
+    mainWindow:Toggle("Low Graphics Mode", false, function(state)
+        Logger.Info("Low Graphics Mode: " .. tostring(state))
+    end)
+    
+    mainWindow:Button("Save Settings", function()
+        Logger.Info("Settings saved")
+    end)
 end
 
 -- Main initialization
@@ -185,6 +277,9 @@ local function initializeMainSystem()
             Logger.Info("Loaded user configuration")
         end
     end
+    
+    -- Create the UI
+    createRecorderUI()
     
     -- Set up event handlers and main functionality
     Logger.Info("Setting up event handlers...")
