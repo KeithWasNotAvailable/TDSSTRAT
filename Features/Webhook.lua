@@ -164,4 +164,111 @@ function NewWebhook(Link)
 			end
 			if Icon then
 				NewEmbed.footer.icon_url = Icon
-		
+			end
+			return EmbedFunctions
+		end
+
+		function EmbedFunctions:Send()
+			local Request = SendRequest
+
+			if Request == nil then
+				warn("Executor not supported.")
+				return
+			end
+
+			local Respone = Request({
+				Url = Data.WebhookLink,
+				Method = "POST",
+				Headers = {
+					["Content-Type"] = "application/json"
+				},
+				Body = game:GetService("HttpService"):JSONEncode(Data.WebhookData)
+			});
+		end
+
+		return EmbedFunctions
+	end
+
+	-- // Debugging Function
+	function Webhook.GetFormattedData()
+		return Data.WebhookData
+	end
+
+	function Webhook:Send()
+		local Request = SendRequest
+		if Request == nil then
+			warn("Executor not supported.")
+			return
+		end
+		local Respone = Request({
+			Url = Data.WebhookLink,
+			Method = "POST",
+			Headers = {
+				["Content-Type"] = "application/json"
+			},
+			Body = game:GetService("HttpService"):JSONEncode(Data.WebhookData)
+		});
+	end
+	return Webhook
+end
+
+local Link = UtilitiesConfig.Webhook.Link
+local Webhook = NewWebhook(Link)
+Webhook.AddMessage("")
+
+local Start = tick()
+local ToSurpass = Start + 1.3
+local Embed = Webhook:CreateEmbed()
+Embed.AddTitle("**Strategies X Webhook**")
+Embed.AddColor(CheckColor[MatchGui:WaitForChild("banner"):WaitForChild("textLabel").Text])
+Embed.AddFooter(`{os.date("%X")} {os.date("%x")}`)
+Embed.AddField("------------------ GAME INFO ----------------","",false)
+Embed.AddField("Map:",ReplicatedStorage.State.Map.Value)
+Embed.AddField("Mode:",ReplicatedStorage.State.Difficulty.Value)
+Embed.AddField("Wave / Health:",LocalPlayer.PlayerGui.ReactGameTopGameDisplay.Frame.wave.container.value.Text.." / "..tostring(ReplicatedStorage.State.Health.Current.Value).." ("..tostring(ReplicatedStorage.State.Health.Max.Value)..")")
+Embed.AddField("Game Time:",TimeFormat(Stats.duration.Text))
+
+repeat
+	task.wait()
+until (Rewards:FindFirstChild("1") ~= nil and Rewards:FindFirstChild("2") ~= nil) or (ToSurpass < tick())
+
+for i , v in next, Rewards:GetChildren() do
+	if v:IsA("Frame") then
+		local TextLabel = v:WaitForChild("content"):WaitForChild("textLabel")
+		if tonumber(TextLabel.Text) == nil then
+			if string.match(TextLabel.Text, "XP") then
+				Embed.AddField("Won Experiences:", TextLabel.Text)
+				continue
+			end
+			Embed.AddField("Won Misc:", "1x "..TextLabel.Text)
+		else
+			local icon = v:WaitForChild("content"):FindFirstChild("icon")
+			if icon:IsA("ImageLabel") then
+				if Identifier[icon.Image] == nil then
+					Embed.AddField("Won Unidentified Item:", "1x "..TextLabel.Text, icon.Image)
+				else
+					Embed.AddField("Won "..Identifier[icon.Image]..":", TextLabel.Text)
+				end
+			end
+		end
+	end
+end
+
+Embed.AddField("----------------- PLAYER INFO ---------------","", false)
+Embed.AddField("Username:", (UtilitiesConfig.Webhook.HideUser and "Anonymous") or LocalPlayer.Name)
+Embed.AddField("Display Name:", (UtilitiesConfig.Webhook.HideUser and "Anonymous") or LocalPlayer.DisplayName)
+Embed.AddField("Executor Used:", Executor)
+Embed.AddField("Level:", CommaText(PlayerInfo.Level).." :chart_with_upwards_trend:")
+Embed.AddField("Coins:", CommaText(PlayerInfo.Coins).." :coin:")
+Embed.AddField("Gems:", CommaText(PlayerInfo.Gems).." :gem:")
+Embed.AddField("Triumphs:", CommaText(PlayerInfo.Triumphs).." :trophy:")
+Embed.AddField("Loses:", CommaText(PlayerInfo.Loses).." :skull:")
+Embed.AddField("Exp:", CommaText(PlayerInfo.Experience).." :star:")
+Embed.AddField("Spin Tickets:", CommaText(PlayerInfo.SpinTickets).." :tickets:")
+Embed.AddField("Revive Tickets:", CommaText(PlayerInfo.ReviveTickets).." :ticket:")
+Embed.AddField("Timescale Tickets:", CommaText(PlayerInfo.TimescaleTickets).." :tickets:")
+Embed.AddField("----------------- TROOPS INFO ---------------", "```m\n"..CheckTower().."```", false)
+
+if #UtilitiesConfig.Webhook.Link ~= 0 then
+	getgenv().SendCheck = Webhook:Send()
+end
