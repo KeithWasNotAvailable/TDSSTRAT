@@ -12,15 +12,76 @@ local function loadModule(name)
     return result
 end
 
--- Load all custom modules (no external dependencies)
+-- Initialize global variables
+getgenv().StratXLibrary = {
+    UtilitiesConfig = {
+        Camera = 2,
+        LowGraphics = false,
+        BypassGroup = false,
+        AutoBuyMissing = false,
+        AutoPickups = false,
+        RestartMatch = false,
+        TowersPreview = false,
+        AutoSkip = false,
+        UseTimeScale = false,
+        PreferMatchmaking = false,
+        Webhook = {
+            Enabled = false,
+            Link = "",
+            HideUser = false,
+            UseNewFormat = false,
+            PlayerInfo = true,
+            GameInfo = true,
+            TroopsInfo = true,
+            DisableCustomLog = true,
+        },
+    },
+    TowerInfo = {},
+    TowersContained = {Index = 0},
+    ActionInfo = {
+        ["Place"] = {0,0},
+        ["Upgrade"] = {0,0},
+        ["Sell"] = {0,0},
+        ["Skip"] = {0,0},
+        ["Ability"] = {0,0},
+        ["Target"] = {0,0},
+        ["AutoChain"] = {0,0},
+        ["SellAllFarms"] = {0,0},
+        ["Option"] = {0,0},
+    },
+    RestartCount = 0,
+    CurrentCount = 0,
+    Global = {Map = {}},
+    UI = {},
+    Functions = {}
+}
+
+-- Load all custom modules
 local ConvertFunc = loadModule("ConvertFunc.lua")
-local FreeCam = loadModule("FreeCam.lua")
-local JoinLessServer = loadModule("JoinLessServer.lua")
-local LowGraphics = loadModule("LowGraphics.lua")
 local CustomUI = loadModule("CustomUI.lua")
 local CustomConsole = loadModule("CustomConsole.lua")
-local Webhook = loadModule("Webhook.lua")
-local Tutorial = loadModule("Tutorial.lua")
+
+-- Load function modules
+getgenv().Functions = {}
+Functions.Ability = loadModule("Functions/Ability.lua")
+Functions.AutoChain = loadModule("Functions/AutoChain.lua")
+Functions.Loadout = loadModule("Functions/Loadout.lua")
+Functions.Map = loadModule("Functions/Map.lua")
+Functions.Mode = loadModule("Functions/Mode.lua")
+Functions.Option = loadModule("Functions/Option.lua")
+Functions.Place = loadModule("Functions/Place.lua")
+Functions.Sell = loadModule("Functions/Sell.lua")
+Functions.SellAllFarms = loadModule("Functions/SellAllFarms.lua")
+Functions.Skip = loadModule("Functions/Skip.lua")
+Functions.Target = loadModule("Functions/Target.lua")
+Functions.Upgrade = loadModule("Functions/Upgrade.lua")
+
+-- Load feature modules
+local FreeCam = loadModule("Features/FreeCam.lua")
+local JoinLessServer = loadModule("Features/JoinLessServer.lua")
+local LowGraphics = loadModule("Features/LowGraphics.lua")
+local Webhook = loadModule("Features/Webhook.lua")
+local Tutorial = loadModule("Features/Tutorial.lua")
 
 -- Initialize custom console
 _G.CustomConsole = CustomConsole:Create()
